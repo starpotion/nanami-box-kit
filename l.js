@@ -1,5 +1,5 @@
 // Box kit loader (Chihiro, 2026-11-23). A project-chat box arrives as its readable message plus a short skeleton;
-// this fills the skeleton's {%id%} gaps with the pieces in c/, which are locked (ChaCha20) with a key that only
+// this fills the skeleton's {@id@} gaps with the pieces in c/, which are locked (ChaCha20) with a key that only
 // the posted box carries, then puts the box in place and runs its scripts. If anything fails, the message stays.
 // Um... if you found this, the pictures here are noise without the key. They're Rain's, so please leave them be.
 const Q = (a, b) => (a << b) | (a >>> (32 - b))
@@ -44,14 +44,14 @@ async function open(sk) {
   const msg = sk.previousElementSibling && sk.previousElementSibling.classList.contains('nkm') ? sk.previousElementSibling : null
   const key = new DataView(b64(sk.dataset.k).buffer)
   let src = sk.textContent.replace(/<\\\/script/gi, '</script').replace(/<\\!--/g, '<!--')
-  const ids = [...new Set([...src.matchAll(/\{%([a-z0-9]+)%\}/g)].map(m => m[1]).filter(i => i !== 'm'))]
+  const ids = [...new Set([...src.matchAll(/\{([%@])([a-z0-9]+)\1\}/g)].map(m => m[2]).filter(i => i !== 'm'))]
   const got = {}
   await Promise.all(ids.map(async id => {
     const r = await fetch(`${base}c/${id}.bin`)
     if (!r.ok) throw new Error(`piece ${id}: ${r.status}`)
     got[id] = await text(unlock(key, await r.arrayBuffer()))
   }))
-  const html = src.replace(/\{%([a-z0-9]+)%\}/g, (m, id) => id === 'm' ? (msg ? msg.innerHTML : '') : got[id])
+  const html = src.replace(/\{([%@])([a-z0-9]+)\1\}/g, (m, q, id) => id === 'm' ? (msg ? msg.innerHTML : '') : got[id])
   const t = document.createElement('template')
   t.innerHTML = html
   const scripts = [...t.content.querySelectorAll('script')]
